@@ -2,3 +2,4 @@ myenv/
 cenv/
 __pycache__/
 .env
+uploaded_files/

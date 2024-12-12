@@ -24,7 +24,7 @@ model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-capt
 @router.post("/caption_generator")
 def caption_generator_api(img_url: UploadFile = File(...)):
     try:
-            # Define the path where the file will be saved
+        # Define the path where the file will be saved
         file_path = UPLOAD_FOLDER / img_url.filename
         
         # Save the uploaded file to the specified folder
@@ -45,14 +45,6 @@ def caption_generator_api(img_url: UploadFile = File(...)):
         # Configure the API key
         genai.configure(api_key=os.getenv("GENAI_API_KEY"))
 
-        # Set up the generation configuration
-        # generation_config_feedback = {
-        #     "temperature": 0.3,
-        #     "top_p": 0.95,
-        #     "top_k": 1,
-        #     "max_output_tokens": 8192,
-        # }
-
         model_for_feedback = genai.GenerativeModel('gemini-1.0-pro')
 
         prompt_feedback = f"generate 10 creative caption with emojis and relative popular hashtags from below sentence {generated_text}"
@@ -63,6 +55,7 @@ def caption_generator_api(img_url: UploadFile = File(...)):
 
         # Clean up the list to remove empty strings
         caption_list = [caption.strip() for caption in caption_list if caption.strip()]
+        print("-------------------------------------------------------------------------------")
         print("generate_caption: ",caption_list)
 
         return response(1001,data=caption_list)
