@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 BASE_PATH = Path(__file__).resolve().parent
 root_router = APIRouter()
-app = FastAPI(title="Test REST API. V1")
+app = FastAPI(title="Caption Generator API's")
 
 app.include_router(api_router)
 
