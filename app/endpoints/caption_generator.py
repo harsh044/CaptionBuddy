@@ -10,9 +10,12 @@ import boto3
 from PIL import Image
 from io import BytesIO
 import requests
+from pathlib import Path
 
 router = APIRouter()
 
+UPLOAD_FOLDER = Path("uploaded_files")
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 # Load environment variables from .env file
 load_dotenv()
 
@@ -33,38 +36,29 @@ model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-capt
 # Function to upload image to S3 and return the file URL
 async def upload_image_to_s3(img_url: UploadFile):
     try:
-        # Read the image file content
-        file_contents = await img_url.read()
-
-        # Upload the image to S3
-        s3_client.put_object(
-            Bucket=BUCKET_NAME,
-            Key=img_url.filename,  # The name of the file in S3
-            Body=file_contents,
-            ContentType=img_url.content_type,  # Optional: Set the content type
-        )
+        # Define the path where the file will be saved
+        file_path = UPLOAD_FOLDER / img_url.filename
+        
+        # Save the uploaded file to the specified folder
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(img_url.file, buffer)
 
         # Construct the S3 file URL (file path)
-        file_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{img_url.filename}"
-        return file_url
+        return file_path
     except Exception as e:
         raise Exception(f"Error uploading image to S3: {str(e)}")
 
 # Function to generate captions from the image
-def generate_caption_from_image(image_url: str):
+def generate_caption_from_image(file_path: str):
     try:
-                # Download the image from the URL
-        response = requests.get(image_url)
-        response.raise_for_status()  # Check if the request was successful
-
-        # Open the image using PIL
-        raw_image = Image.open(BytesIO(response.content)).convert('RGB')
-        # Image To Text Generation
+        raw_image = Image.open(file_path).convert('RGB')
         inputs = processor(raw_image, return_tensors="pt")
+        # Image To Text Generation
 
         out = model.generate(**inputs, max_new_tokens=200)
         generated_text = processor.decode(out[0], skip_special_tokens=True)
         return generated_text
+
     except Exception as e:
         raise Exception(f"Error generating caption from image: {str(e)}")
 
