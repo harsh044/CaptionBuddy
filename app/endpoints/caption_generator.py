@@ -14,8 +14,8 @@ from pathlib import Path
 
 router = APIRouter()
 
-UPLOAD_FOLDER = Path("uploaded_files")
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+# UPLOAD_FOLDER = Path("uploaded_files")
+# UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 # Load environment variables from .env file
 load_dotenv()
 
@@ -27,7 +27,7 @@ s3_client = boto3.client(
     region_name="ap-south-1",  # Use your AWS region
 )
 
-BUCKET_NAME = "generatecaptions"
+BUCKET_NAME = "captionbuddy"
 
 # Initialize BLIP processor and model for image captioning
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
@@ -36,25 +36,41 @@ model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-capt
 # Function to upload image to S3 and return the file URL
 async def upload_image_to_s3(img_url: UploadFile):
     try:
-        # Define the path where the file will be saved
-        file_path = UPLOAD_FOLDER / img_url.filename
+        # Define the path where the file will be saved temporarily
+        file_path = Path("/tmp") / img_url.filename
         
         # Save the uploaded file to the specified folder
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(img_url.file, buffer)
 
-        # Construct the S3 file URL (file path)
-        return file_path
+        # Upload the file to S3
+        s3_client.upload_file(
+            str(file_path), 
+            BUCKET_NAME, 
+            img_url.filename,
+        )
+
+        # Construct the public URL for the uploaded file
+        file_url = f"https://{BUCKET_NAME}.s3.{s3_client.meta.region_name}.amazonaws.com/{img_url.filename}"
+
+        # Return the public URL
+        return file_url
     except Exception as e:
         raise Exception(f"Error uploading image to S3: {str(e)}")
 
 # Function to generate captions from the image
 def generate_caption_from_image(file_path: str):
     try:
-        raw_image = Image.open(file_path).convert('RGB')
-        inputs = processor(raw_image, return_tensors="pt")
-        # Image To Text Generation
+        
+        # Fetch the image from the URL
+        response = requests.get(file_path)
+        response.raise_for_status()  # Ensure the request was successful
 
+        # Open the image from the response content
+        raw_image  = Image.open(BytesIO(response.content)).convert('RGB')
+        
+        # Preprocess the image
+        inputs = processor(raw_image , return_tensors="pt")
         out = model.generate(**inputs, max_new_tokens=200)
         generated_text = processor.decode(out[0], skip_special_tokens=True)
         return generated_text
