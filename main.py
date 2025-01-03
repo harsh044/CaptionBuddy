@@ -18,8 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if __name__ == "__main__":
-    import uvicorn
-    # Use this for debugging purposes only       
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-    # uvicorn.main()
+# if __name__ == "__main__":
+#     import uvicorn
+#     # Use this for debugging purposes only       
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+#     # uvicorn.main()

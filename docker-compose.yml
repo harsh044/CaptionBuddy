@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  build:
+    context: .
+    dockerfile: Dockerfile
+  ports:
+    - "8000:8000"  # Maps port 8000 of the container to port 8000 on the host
+  volumes:
+    - .:/app  # Mounts the current directory to /app in the container for live updates
+  environment:
+    - PYTHONUNBUFFERED=1  # Ensures logs are shown immediately
