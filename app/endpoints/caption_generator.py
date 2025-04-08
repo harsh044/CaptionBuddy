@@ -50,8 +50,14 @@ async def upload_image_to_s3(img_url: UploadFile):
             img_url.filename,
         )
 
+        file_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET_NAME, 'Key': img_url.filename},
+            ExpiresIn=3600  # seconds (1 hour)
+        )
+
         # Construct the public URL for the uploaded file
-        file_url = f"https://{BUCKET_NAME}.s3.{s3_client.meta.region_name}.amazonaws.com/{img_url.filename}"
+        # file_url = f"https://{BUCKET_NAME}.s3.{s3_client.meta.region_name}.amazonaws.com/{img_url.filename}"
 
         # Return the public URL
         return file_url
@@ -84,7 +90,7 @@ def generate_creative_captions(generated_text: str):
         # Configure the API key for GenAI
         genai.configure(api_key=os.getenv("GENAI_API_KEY"))
 
-        model_for_feedback = genai.GenerativeModel('gemini-1.0-pro')
+        model_for_feedback = genai.GenerativeModel('gemini-1.5-pro')
 
         prompt_feedback = f"Generate 10 creative captions with emojis and relevant popular hashtags from the following sentence: {generated_text}"
 
